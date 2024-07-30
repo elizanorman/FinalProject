@@ -1,6 +1,10 @@
 FROM rocker/r-ver:3.5.0
 
+<<<<<<< HEAD
 #RUN apt-get update -qq && apt-get install -y libssl-dev libcurl4-gnutls-dev
+=======
+RUN apt-get update -qq && apt-get install -y libssl-dev libcurl4-gnutls-dev
+>>>>>>> b6e60240254fd53ce8f1a7207a03d734e00be4fa
 
 RUN R -e "install.packages('tidyverse')"
 RUN R -e "install.packages('reshape2')"

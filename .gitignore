@@ -3,8 +3,12 @@
 .RData
 .Ruserdata
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 /.quarto/
+=======
+.tar
+>>>>>>> b6e60240254fd53ce8f1a7207a03d734e00be4fa
 =======
 .tar
 >>>>>>> b6e60240254fd53ce8f1a7207a03d734e00be4fa
