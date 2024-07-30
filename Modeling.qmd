@@ -1,0 +1,162 @@
+---
+title: "Modeling File"
+author: "Eliza Norman"
+format: html
+editor: visual
+---
+
+# Modeling File
+
+```{r}
+#| warning: FALSE
+library(tidyverse)
+library(reshape2)
+library(caret)
+library(MLmetrics)
+```
+
+```{r}
+
+#| echo: FALSE
+diabetesData <- read_csv("diabetes_binary_health_indicators_BRFSS2015.csv", show_col_types = FALSE)
+
+diabetesData$Diabetes_binary <- factor(diabetesData$Diabetes_binary,
+         levels = c(0,1),
+         labels = c("No_diabetes", "Diabetes"))
+
+diabetesData$HighChol <- factor(diabetesData$HighChol,
+         levels = c(0,1),
+         labels = c("No high cholesterol", "High cholesterol"))
+
+diabetesData$Smoker <- factor(diabetesData$Smoker,
+         levels = c(0,1),
+         labels = c("Never smoked at least 100 cigs", "Has smoked at least 100 cigs"))
+
+diabetesData$PhysActivity <- factor(diabetesData$PhysActivity,
+         levels = c(0,1),
+         labels = c("No physical activity", "Physical activity"))
+
+diabetesData$Sex <- factor(diabetesData$Sex,
+         levels = c(0,1),
+         labels = c("Female", "Male"))
+
+diabetesData$Age <- factor(diabetesData$Age,
+         levels = c(1,2,3,4,5,6,7,8,9,10,11,12,13),
+         labels = c("20-24","25-29", "30-34", "35-39", "40-44", "45-49","51-54","55-59","60-64", "65-69", "70-74", "75-79", "80 or older"))
+
+diabetesData$HvyAlcoholConsump <- factor(diabetesData$HvyAlcoholConsump,
+         levels = c(0,1),
+         labels = c("No", "Yes"))
+
+diabetesData$DiffWalk <- factor(diabetesData$DiffWalk,
+         levels = c(0,1),
+         labels = c("No serious difficulty walking up stairs", "Serious difficulty walking stairs"))
+
+newDiabetesData <- diabetesData |>
+  select(Diabetes_binary, HighChol, BMI, Smoker, PhysActivity, HvyAlcoholConsump, Sex, Age, DiffWalk)
+
+```
+
+Log-loss helps measure how close the predicted probability is to the actual 0 or 1 value in binary classification. A high log-loss means the predicted value is further from the actual value. So we want a lower log-loss value for a better prediction model. However, we cannot compare log-loss scores from 2 *different* datasets to figure out which model is the best fit.
+
+
+```{r}
+set.seed(50)
+
+index <- createDataPartition(newDiabetesData$Diabetes_binary, p = 0.7, list = FALSE)
+trainData <- newDiabetesData[index, ]
+testData <- newDiabetesData[-index, ]
+
+
+# Define the control object with custom log-loss metric
+trctrl <- trainControl(
+  method = "repeatedcv",
+  number = 5,
+  summaryFunction = mnLogLoss,  # Use custom log-loss function
+  classProbs = TRUE,           # Needed for logistic regression
+)
+
+# Train the model
+logFit1 <- train(
+  Diabetes_binary ~ ., 
+  data = trainData, 
+  method = "glm",
+  family = "binomial",
+  trControl = trctrl,
+  preProcess = c("center", "scale"),
+  metric = "logLoss"  # Specify the metric to optimize
+)
+
+# Print the results
+print(logFit1)
+
+# Train the model
+logFit2 <- train(
+  Diabetes_binary ~ Age + Sex + HighChol + BMI + HvyAlcoholConsump, 
+  data = trainData, 
+  method = "glm",
+  family = "binomial",
+  trControl = trctrl,
+  preProcess = c("center", "scale"),
+  metric = "logLoss"  # Specify the metric to optimize
+)
+
+# Print the results
+print(logFit2)
+
+# Train the model
+logFit3 <- train(
+  Diabetes_binary ~ Age + Sex + HighChol, 
+  data = trainData, 
+  method = "glm",
+  family = "binomial",
+  trControl = trctrl,
+  preProcess = c("center", "scale"),
+  metric = "logLoss"  # Specify the metric to optimize
+)
+
+# Print the results
+print(logFit3)
+```
+
+```{r}
+classTree <- train(Diabetes_binary ~ ., 
+                 data = trainData, 
+                 method = "rpart",
+                 trControl=trctrl,
+                 preProcess = c("center", "scale"),
+                 tuneGrid = expand.grid(cp = seq(0,0.1, by=0.1)))
+classTree
+```
+
+```{r}
+# Define the control object with custom log-loss metric
+trctrl2 <- trainControl(
+  method = "repeatedcv",
+  number = 3,
+  summaryFunction = mnLogLoss,  # Use custom log-loss function
+  classProbs = TRUE,           # Needed for logistic regression
+)
+
+
+randForest <- train(Diabetes_binary ~ ., 
+                 data = trainData, 
+                 method = "rf",
+                 trControl=trctrl2,
+                 ntree = 50,
+                 preProcess = c("center", "scale"),
+                 tuneGrid = data.frame(mtry = 1:5))
+randForest
+```
+
+# Comparison
+
+```{r}
+confusionMatrix(data=testData$Diabetes_binary, reference = predict(logFit1, newdata = testData))
+
+confusionMatrix(data=testData$Diabetes_binary, reference = predict(classTree, newdata = testData))
+
+confusionMatrix(data=testData$Diabetes_binary, reference = predict(randForest, newdata = testData))
+
+```
+
