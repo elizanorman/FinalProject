@@ -10,9 +10,19 @@ library(tidyverse)
 library(reshape2)
 ```
 
+# EDA file
+
 ## Introduction Section
 
+For this project we will look to predict whether or not a person will have diabetes based on some of their vital sign measurements and lifestyle data.
+
+The `Diabetes_binary` response is the indicator of whether or not the person has diabetes. The `HighChol` variable is another binary variable indicating whether or not the patient had high cholesterol. `Smoker` is also binary, and someone who has not smoked at least 100 cigarettes in their life is not considered a smoker. A person's body mass index (or BMI) is a numeric value that is also recorded; this set of patients has minimum 12 and maximum 98. A metric for each patient's movement is also recorded, based on whether or not they have done physical activity in the past 30 days, not including their job. Alcohol consumption is considered "heavy" for adult men at 14 or more drinks per week, and for adult women at 7 or more drinks per week. This is also recorded for each patient. The `DiffWalk` variable is binary and helps the researcher understand if the patient may have difficulty walking or climbing stairs. Sex is taken into account for modeling diabetes likelihood. Age is split into 5-year categories, and most of the people being examined are middle-aged or older.
+
+Exploratory Data Analysis (EDA) can allow us to have insight as to which variables might be related to the response as well as to each other. Then we can build our models accordingly, in order to most effectively predict when a person has diabetes.
+
 ## Data
+
+First, I'll read in the data and convert the binary numeric values into meaningful phrases.
 
 ```{r}
 diabetesData <- read_csv("diabetes_binary_health_indicators_BRFSS2015.csv", show_col_types = FALSE)
@@ -55,22 +65,53 @@ newDiabetesData <- diabetesData |>
 colSums(is.na(newDiabetesData))
 ```
 
+There are no missing predictor values for any of the observations.
+
 ## Summarizations
+
+For my summarizations, since I am interested in the presence of diabetes, I will filter the dataset to only look at those that have diabetes.
 
 ```{r}
 summaryDiabetesData <- newDiabetesData |>
   filter(Diabetes_binary == "Diabetes")
 
 mean(summaryDiabetesData$BMI)
-table(summaryDiabetesData$HighChol, summaryDiabetesData$PhysActivity)
-table(summaryDiabetesData$Sex)
-table(summaryDiabetesData$DiffWalk)
+```
 
+The mean BMI for diabetic people in this dataset is about 32.
+
+Below I will create contingency tables to see the counts for different levels of some of the categorical predictors
+
+```{r}
+table(summaryDiabetesData$HighChol, summaryDiabetesData$PhysActivity)
+```
+
+Surprisingly, the highest count of diabetics have done physical activity in the last 30 days and have high cholesterol
+
+```{r}
+table(summaryDiabetesData$Sex)
+```
+
+Most diabetics in this dataset are women, according to this table.
+
+```{r}
+table(summaryDiabetesData$DiffWalk)
+```
+
+However, most diabetics in this dataset do not have serious difficulty walking or climbing up stairs.
+
+The boxplot below shows that, although there are lots of outliers, the majority of diabetics have a higher BMI than the majority of those without diabetes.
+
+```{r}
 # Boxplot
 f <- ggplot(newDiabetesData, aes(x = Diabetes_binary, y = BMI))
 f + geom_boxplot() +
-  labs(title = "Boxplot of Value by Category", x = "Category", y = "Value")
+  labs(title = "Boxplot of BMI by Diabetes Category", x = "Category", y = "BMI")
+```
 
+The heat map below demonstrates how physical activity is very strongly inversely related to diabetes.
+
+```{r}
 contingency_table <- table(newDiabetesData$Diabetes_binary, newDiabetesData$PhysActivity)
 
 heatmap_data <- as.data.frame(as.table(contingency_table))

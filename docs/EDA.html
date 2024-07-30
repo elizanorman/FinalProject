@@ -127,11 +127,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(reshape2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<section id="eda-file" class="level1">
+<h1>EDA file</h1>
 <section id="introduction-section" class="level2">
 <h2 class="anchored" data-anchor-id="introduction-section">Introduction Section</h2>
+<p>For this project we will look to predict whether or not a person will have diabetes based on some of their vital sign measurements and lifestyle data.</p>
+<p>The <code>Diabetes_binary</code> response is the indicator of whether or not the person has diabetes. The <code>HighChol</code> variable is another binary variable indicating whether or not the patient had high cholesterol. <code>Smoker</code> is also binary, and someone who has not smoked at least 100 cigarettes in their life is not considered a smoker. A person’s body mass index (or BMI) is a numeric value that is also recorded; this set of patients has minimum 12 and maximum 98. A metric for each patient’s movement is also recorded, based on whether or not they have done physical activity in the past 30 days, not including their job. Alcohol consumption is considered “heavy” for adult men at 14 or more drinks per week, and for adult women at 7 or more drinks per week. This is also recorded for each patient. The <code>DiffWalk</code> variable is binary and helps the researcher understand if the patient may have difficulty walking or climbing stairs. Sex is taken into account for modeling diabetes likelihood. Age is split into 5-year categories, and most of the people being examined are middle-aged or older.</p>
+<p>Exploratory Data Analysis (EDA) can allow us to have insight as to which variables might be related to the response as well as to each other. Then we can build our models accordingly, in order to most effectively predict when a person has diabetes.</p>
 </section>
 <section id="data" class="level2">
 <h2 class="anchored" data-anchor-id="data">Data</h2>
+<p>First, I’ll read in the data and convert the binary numeric values into meaningful phrases.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>diabetesData <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"diabetes_binary_health_indicators_BRFSS2015.csv"</span>, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -180,9 +186,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
                 0 </code></pre>
 </div>
 </div>
+<p>There are no missing predictor values for any of the observations.</p>
 </section>
 <section id="summarizations" class="level2">
 <h2 class="anchored" data-anchor-id="summarizations">Summarizations</h2>
+<p>For my summarizations, since I am interested in the presence of diabetes, I will filter the dataset to only look at those that have diabetes.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>summaryDiabetesData <span class="ot">&lt;-</span> newDiabetesData <span class="sc">|&gt;</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Diabetes_binary <span class="sc">==</span> <span class="st">"Diabetes"</span>)</span>
@@ -191,6 +199,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 31.94401</code></pre>
 </div>
+</div>
+<p>The mean BMI for diabetic people in this dataset is about 32.</p>
+<p>Below I will create contingency tables to see the counts for different levels of some of the categorical predictors</p>
+<div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(summaryDiabetesData<span class="sc">$</span>HighChol, summaryDiabetesData<span class="sc">$</span>PhysActivity)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                     
@@ -198,25 +210,38 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   No high cholesterol                 4006              7654
   High cholesterol                    9053             14633</code></pre>
 </div>
+</div>
+<p>Surprisingly, the highest count of diabetics have done physical activity in the last 30 days and have high cholesterol</p>
+<div class="cell">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(summaryDiabetesData<span class="sc">$</span>Sex)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Female   Male 
  18411  16935 </code></pre>
 </div>
+</div>
+<p>Most diabetics in this dataset are women, according to this table.</p>
+<div class="cell">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(summaryDiabetesData<span class="sc">$</span>DiffWalk)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 No serious difficulty walking up stairs       Serious difficulty walking stairs 
                                   22225                                   13121 </code></pre>
 </div>
+</div>
+<p>However, most diabetics in this dataset do not have serious difficulty walking or climbing up stairs.</p>
+<p>The boxplot below shows that, although there are lots of outliers, the majority of diabetics have a higher BMI than the majority of those without diabetes.</p>
+<div class="cell">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Boxplot</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(newDiabetesData, <span class="fu">aes</span>(<span class="at">x =</span> Diabetes_binary, <span class="at">y =</span> BMI))</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>f <span class="sc">+</span> <span class="fu">geom_boxplot</span>() <span class="sc">+</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Boxplot of Value by Category"</span>, <span class="at">x =</span> <span class="st">"Category"</span>, <span class="at">y =</span> <span class="st">"Value"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Boxplot of BMI by Diabetes Category"</span>, <span class="at">x =</span> <span class="st">"Category"</span>, <span class="at">y =</span> <span class="st">"BMI"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<p><img src="EDA_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid" width="672"></p>
+<p><img src="EDA_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid" width="672"></p>
 </div>
+</div>
+<p>The heat map below demonstrates how physical activity is very strongly inversely related to diabetes.</p>
+<div class="cell">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>contingency_table <span class="ot">&lt;-</span> <span class="fu">table</span>(newDiabetesData<span class="sc">$</span>Diabetes_binary, newDiabetesData<span class="sc">$</span>PhysActivity)</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>heatmap_data <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">as.table</span>(contingency_table))</span>
@@ -227,12 +252,13 @@ No serious difficulty walking up stairs       Serious difficulty walking stairs
 <span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_gradient</span>(<span class="at">low =</span> <span class="st">"white"</span>, <span class="at">high =</span> <span class="st">"blue"</span>) <span class="sc">+</span></span>
 <span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Heatmap of Cat1 by Cat2"</span>, <span class="at">x =</span> <span class="st">"Category 1"</span>, <span class="at">y =</span> <span class="st">"Category 2"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<p><img src="EDA_files/figure-html/unnamed-chunk-3-2.png" class="img-fluid" width="672"></p>
+<p><img src="EDA_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
 <p><a href="Modeling.html">Click here for the Modeling Page</a></p>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->

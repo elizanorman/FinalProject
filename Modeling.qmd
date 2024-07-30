@@ -8,7 +8,7 @@ editor: visual
 # Modeling File
 
 ```{r}
-#| warning: FALSE
+#| warning: false
 library(tidyverse)
 library(reshape2)
 library(caret)
@@ -17,7 +17,7 @@ library(MLmetrics)
 
 ```{r}
 
-#| echo: FALSE
+#| echo: false
 diabetesData <- read_csv("diabetes_binary_health_indicators_BRFSS2015.csv", show_col_types = FALSE)
 
 diabetesData$Diabetes_binary <- factor(diabetesData$Diabetes_binary,
@@ -57,8 +57,14 @@ newDiabetesData <- diabetesData |>
 
 ```
 
-Log-loss helps measure how close the predicted probability is to the actual 0 or 1 value in binary classification. A high log-loss means the predicted value is further from the actual value. So we want a lower log-loss value for a better prediction model. However, we cannot compare log-loss scores from 2 *different* datasets to figure out which model is the best fit.
+## Log Loss
 
+Log loss helps measure how close the predicted probability is to the actual 0 or 1 value in binary classification. A high log-loss means the predicted value is further from the actual value. So we want a lower log-loss value for a better prediction model. However, we cannot compare log-loss scores from 2 *different* datasets to figure out which model is the best fit.
+
+
+## Training and Test
+
+First I will set the seed to allow reproducibility of these results. 70$\%$ of the data will be used to train the models, and 30$\%$ of the observations will be used to test the models' predictions. 
 
 ```{r}
 set.seed(50)
@@ -66,16 +72,26 @@ set.seed(50)
 index <- createDataPartition(newDiabetesData$Diabetes_binary, p = 0.7, list = FALSE)
 trainData <- newDiabetesData[index, ]
 testData <- newDiabetesData[-index, ]
+```
 
+## Logistic Regression Models
 
-# Define the control object with custom log-loss metric
+Logistic regression is used when the response can either be a success or a failure. So we are modeling the average number of "successes". In this case, the presence of diabetes for a person is considered a "success", so we are able to model the probability that a person will have diabetes. Using the logistic (or logit) function, we are able to use a function of a linear model that cannot go below 0 or above 1. 
+
+I set up a 5-fold cross-validation with log-loss as the metric we are trying to minimize.
+
+```{r}
 trctrl <- trainControl(
   method = "repeatedcv",
   number = 5,
-  summaryFunction = mnLogLoss,  # Use custom log-loss function
-  classProbs = TRUE,           # Needed for logistic regression
+  summaryFunction = mnLogLoss,
+  classProbs = TRUE,
 )
+```
 
+Then I trained 3 different logistic regression models, each with different combinations of the predictors.
+
+```{r}
 # Train the model
 logFit1 <- train(
   Diabetes_binary ~ ., 
@@ -84,7 +100,7 @@ logFit1 <- train(
   family = "binomial",
   trControl = trctrl,
   preProcess = c("center", "scale"),
-  metric = "logLoss"  # Specify the metric to optimize
+  metric = "logLoss"
 )
 
 # Print the results
@@ -98,7 +114,7 @@ logFit2 <- train(
   family = "binomial",
   trControl = trctrl,
   preProcess = c("center", "scale"),
-  metric = "logLoss"  # Specify the metric to optimize
+  metric = "logLoss"
 )
 
 # Print the results
@@ -112,14 +128,21 @@ logFit3 <- train(
   family = "binomial",
   trControl = trctrl,
   preProcess = c("center", "scale"),
-  metric = "logLoss"  # Specify the metric to optimize
+  metric = "logLoss"
 )
 
 # Print the results
 print(logFit3)
 ```
 
+Since the first logistic model minimizes logLoss compared to the other two models, it is considered the best of the logistic models.
+
+## Classification Tree Model
+
+The classification tree method uses the most prevalent "class" (or level of the response) as the prediction value for each region. So in the case of the model below, the regions represent the values of each of the predictors, so there are many branches of the tree. Then the prediction values are chosen, and multiple complexity parameters are used in the classification model. The classification tree model with the lowest complexity parameter should be chosen.
+
 ```{r}
+#| warning: false
 classTree <- train(Diabetes_binary ~ ., 
                  data = trainData, 
                  method = "rpart",
@@ -128,6 +151,12 @@ classTree <- train(Diabetes_binary ~ .,
                  tuneGrid = expand.grid(cp = seq(0,0.1, by=0.1)))
 classTree
 ```
+
+According to the fit, a complexity parameter of 0 should be used in order to minimize log loss.
+
+## Random Forest
+
+Now 3-fold cross validation should be used for the random forest model technique. The random forest modeling averages across many different tree fits, which decreases variance over just the one classification tree fit. 
 
 ```{r}
 # Define the control object with custom log-loss metric
@@ -149,7 +178,12 @@ randForest <- train(Diabetes_binary ~ .,
 randForest
 ```
 
-# Comparison
+According to the results above, the mtry = 5 parameter minimizes the log loss for the random forest modeling technique.
+
+
+# Final Model Selection
+
+Applying the best logistic model, the classification tree model, and the random forest model to the test data (30$\%$), we can find the very best model of the methods we used.
 
 ```{r}
 confusionMatrix(data=testData$Diabetes_binary, reference = predict(logFit1, newdata = testData))
@@ -160,3 +194,4 @@ confusionMatrix(data=testData$Diabetes_binary, reference = predict(randForest, n
 
 ```
 
+Since the random forest model had the highest accuracy between its predictions and the values from the test dataset, it is the best overall model.

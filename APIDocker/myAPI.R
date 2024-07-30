@@ -79,6 +79,14 @@ function(HighChol = "No high cholesterol", BMI = 28.38236, Smoker = "Never smoke
   new_data <- data.frame(HighChol = HighChol, BMI = BMI, Smoker= Smoker, PhysActivity = PhysActivity, HvyAlcoholConsump = HvyAlcoholConsump, Sex = Sex, Age = Age, DiffWalk = DiffWalk)
   predict(randForest, newdata = new_data)
 }
+
+#* Personal info
+#* @serializer json
+#* @get /info
+function(){
+  "Eliza Norman "
+}
+
 #http://localhost:PORT/pred?Sex=Female&Age=60-64
 #http://localhost:PORT/pred?PhysActivity=Physical%20activity
 #http://localhost:PORT/pred?HighChol=No%20high%20cholesterol&BMI=25&Smoker=Never%20smoked%20at%20least%20100%20cigs
